@@ -423,10 +423,11 @@ int main() {
 
           	json msgJson;
 
+            /*
           	vector<double> next_x_vals;
           	vector<double> next_y_vals;
 
-            /*
+            
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	double dist_inc = 0.3;
             for(int i = 0; i < 50; i++)
