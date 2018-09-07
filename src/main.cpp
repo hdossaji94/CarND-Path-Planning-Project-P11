@@ -205,7 +205,7 @@ int main() {
   int lane = 1;
 
   //have a reference velocity to target
-  double ref_vel = 49.5; //mph
+  double ref_vel = 0.0; //mph
 
   h.onMessage([&ref_vel,&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&lane](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
@@ -246,56 +246,90 @@ int main() {
 
             int prev_size = previous_path_x.size();
 
-            /*
+            
 
             if(prev_size > 0)
             {
               car_s = end_path_s;
             }
 
-            bool too_close = false;
+      // true false for lane shifting and slowing down
+      bool too_close = false;
+      bool car_left = false;
+      bool car_right = false;
 
-            //find ref_v to use
-            for(int i=0; i<sensor_fusion.size(); i++)
-            {
-              //car is in my lane
-              fload d = sensor_fusion[i][6]
-              if(d< (2+4*lane+2) && d > (2+4*lane-2) )
-              {
-                double vx = sensor_fusion[i][3];
-                double vy = sensor_fusion[i][4];
-                double check_speed = sqrt(vx*vx+vy*vy);
-                double check_car_s = sensor_fusion[i][5];
+      // is car in lane?
+      for (int i = 0; i < sensor_fusion.size(); i++) {
+        // Car is in my lane
+        float d = sensor_fusion[i][6];
 
-                check_car_s += ((double)prev_size*.02*check_speed); //if using previous pounts can project s value out
-                //check s values greater than mine and s gap
-                if((check_car_s > car_s) && ((check_car_s-car_s)<30) )
-                {
-                  
+        // what lane is the car that is in question?
+        int car_lane;
+        if (d >= 0 && d < 4) {
+          car_lane = 0;
+        } else if (d >= 4 && d < 8) {
+          car_lane = 1;
+        } else if (d >= 8 && d <= 12) {
+          car_lane = 2;
+        } else {
+          continue;
+        }
 
+        // check lane width
+        double vx = sensor_fusion[i][3];
+        double vy = sensor_fusion[i][4];
+        double check_speed = sqrt(vx*vx + vy*vy);
+        double check_car_s = sensor_fusion[i][5];
 
-                  // Do some logic here
+       
+        check_car_s += ((double)prev_size*0.02*check_speed);
 
+        int gap = 30; // m
 
+        // See if the car is ahead, to the left, or to the right
+        if (car_lane == lane) {
+          // ahead car
+          too_close |= (check_car_s > car_s) && ((check_car_s - car_s) < gap);
+        } else if (car_lane - lane == 1) {
+          // right car
+          car_right |= ((car_s - gap) < check_car_s) && ((car_s + gap) > check_car_s);
+        } else if (lane - car_lane == 1) {
+          // left car
+          car_left |= ((car_s - gap) < check_car_s) && ((car_s + gap) > check_car_s);
+        }
+      }
 
-                }
-
-              }
-            }
-
-            */
-
-
-            /*
-            if(too_close)
-            {
-              ref_vel -= .224;
-            }
-            else if(ref_vel <49.5)
-            {
-              ref_vel += .224; 
-            }
-            */
+      // speed regulation
+      double acc = 0.224;
+      double max_speed = 49.5;
+      if (too_close) {
+        // ahead car
+        // slow down or shift lanes
+        if (!car_right && lane < 2) {
+          // shift right when no car is to the right and lane is open
+          lane++;
+        } else if (!car_left && lane > 0) {
+          // shift left when no car is to the left and lane is opent
+          lane--;
+        } else {
+          // car is stuck so slow down
+          ref_vel -= acc;
+        }
+      } else {
+        if (lane != 1) {
+          // checking if center lane is safe
+          if ((lane == 2 && !car_left) || (lane == 0 && !car_right)) {
+            // move to center lane
+            lane = 1;
+          }
+        }
+        
+        if (ref_vel < max_speed) {
+          // move up to speed limit as long as no car is ahead
+          ref_vel += acc;
+        }
+      }
+            
 
             // Create a list of widel spaced (x,y) waypoints, evenly spaced at 30m
             // later we will interoplate these waypoints with a spline and fill it in with more points that control
