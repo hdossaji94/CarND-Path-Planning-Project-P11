@@ -1,5 +1,21 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
+
+## Introduction
+In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3
+
+### Reflection
+This project source file is contained in main.cpp in the src folder. This was the only file with coding additions besides the addition of the spline.h header file. The source file contains three main addtions: Prediction, Decision Process and Trajectory. 
+
+#### Prediction
+From lines 256 to 300, the program deals with sensor fusion and localization data. The purpose for this section is to determine if it is appropriate to change lanes. The autonomous vehicle determines this by using its onboard sensors to first see if it needs to change lanes. For example, the car could decide it needs to change lanes because a car that it is approaching in the same lane is too slow. So the code checks to see if it is safe to shift right or left by seeing if the lane is open and if another car in that lane is far enough to shift safely. The car in the other lanes must be 30 meters back for our car to decide that is safe to change lanes. 
+
+#### Decision Process
+Lines 302 to 331 in main.cpp deal with the car's behavior and logic behind making decisions. This section has code to determine whether the car should slow down, speed up, or swtich lanes. The car is coded to have a preference of staying in the middle lane when appropriate. This section also has speed and acceleration regulation specifying max speed and rate of acceleration and deceleration. If there is no car in front of our car, the car will automatically speed up to 49.5 mph. 
+
+#### Trajectory
+Lines 337 to 454 deal with the trajectory for the car. This code uses the speed, behavior in terms of lane positioning, car coordinates and past path planning points to determine the future points.  This code creates a list of widely spaced (x,y) waypoints, evenly spaced at 30m. It then interpolates these waypoints with a spline using the spline.h library and fills the path with more points that control where the car will go. The last two points in the past planned pooints are used with three points at a further distance to calculate the spline. The Frenet helper function is able to help by creating three points spaced evenly with a distance of 30 meters in front of the car. A shift and rotate transform is needed since splines are used to create the trajectory. The projected path will contain 50 waypoints once the correct path is figured out. The rest of the waypoints are generated based on this desired projection to keep the vehicle in the desired lane. 
+
    
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).
